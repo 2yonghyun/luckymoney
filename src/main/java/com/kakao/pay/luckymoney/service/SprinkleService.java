@@ -29,11 +29,11 @@ public class SprinkleService {
         try {
             foundSprinkle = sprinkleRepository.findSprinkleByTokenAndSprinkledTimeGreaterThan(token, 7);
         } catch (NoResultException e) {
-            throw new ApiException("조회할 수 있는 결과가 없습니다.", ErrorCode.E0101); // BadRequest 400
+            throw new ApiException(ErrorCode.E0101); // BadRequest 400
         }
 
         if (!foundSprinkle.getUserId().equals(userId)) {
-            throw new ApiException("뿌린 사람 자신만 조회를 할 수 있습니다.", ErrorCode.E0301);  // Forbidden 403
+            throw new ApiException(ErrorCode.E0301);  // Forbidden 403
         }
 
         return foundSprinkle;
@@ -41,14 +41,14 @@ public class SprinkleService {
 
     @Transactional
     public String sprinkleAndCreatePickups(String roomId, Long userId, int totalAmount, int divideNumber) {
-        if (totalAmount < divideNumber) throw new ApiException("뿌리기 금액이 나누려는 사람수보다 작을 수 없습니다.", ErrorCode.E0107); // BadRequest 400
+        if (totalAmount < divideNumber) throw new ApiException(ErrorCode.E0107); // BadRequest 400
 
         Sprinkle createdSprinkle = new Sprinkle(roomId, userId, totalAmount, divideNumber);
 
         try {
             sprinkleRepository.save(createdSprinkle);
         } catch (Exception e) {
-            throw new ApiException("토큰 발급에 실패하였습니다.", ErrorCode.E0001); // InternalServiceError 500
+            throw new ApiException(ErrorCode.E0001); // InternalServiceError 500
         }
 
         createPickups(createdSprinkle);
@@ -56,7 +56,6 @@ public class SprinkleService {
         return createdSprinkle.getToken();
     }
 
-    @Transactional
     public void createPickups(Sprinkle sprinkle) {
         int leftover = sprinkle.getAmount();
         int divideNumber = sprinkle.getDivideNumber();
@@ -75,7 +74,7 @@ public class SprinkleService {
         try {
             targetSprinkle = sprinkleRepository.findByToken(token);
         } catch (NoResultException e) {
-            throw new ApiException("존재하지 않는 대상입니다.", ErrorCode.E0102); // BadRequest 400
+            throw new ApiException(ErrorCode.E0102); // BadRequest 400
         }
 
         validateBeforePickup(roomId, userId, targetSprinkle);
@@ -91,25 +90,25 @@ public class SprinkleService {
 
     private void validateBeforePickup(String roomId, Long userId, Sprinkle sprinkle) {
         if (!StringUtils.equals(roomId, sprinkle.getRoomId())) {
-            throw new ApiException("뿌리기가 호출된 대화방과 동일한 대화방에 속한 사용자만이 받을 수 있습니다.", ErrorCode.E0302); // Forbidden 403
+            throw new ApiException(ErrorCode.E0302); // Forbidden 403
         }
 
         if (userId.equals(sprinkle.getUserId())) {
-            throw new ApiException("자신이 뿌리기한 건은 자신이 받을 수 없습니다.", ErrorCode.E0103); // BadRequest 400
+            throw new ApiException(ErrorCode.E0103); // BadRequest 400
         }
 
         if (sprinkle.isExpired(10)) {
-            throw new ApiException("뿌린 건은 10분간만 유효합니다.", ErrorCode.E0104); // BadRequest 400
+            throw new ApiException(ErrorCode.E0104); // BadRequest 400
         }
 
         if (sprinkle.getPickups().stream().noneMatch(Pickup::isNotPicked)) {
-            throw new ApiException("뿌린 건이 전부 소요된 경우 받을 수 없습니다.", ErrorCode.E0105); // BadRequest 400
+            throw new ApiException(ErrorCode.E0105); // BadRequest 400
         }
 
         if (sprinkle.getPickups().stream()
                 .filter(Pickup::isPicked)
                 .anyMatch(p -> p.getUserId().equals(userId))) {
-            throw new ApiException("뿌리기 당 한 사용자는 한번만 받을 수 있습니다.", ErrorCode.E0106); // BadRequest 400
+            throw new ApiException(ErrorCode.E0106); // BadRequest 400
         }
     }
 
